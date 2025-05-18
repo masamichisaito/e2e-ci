@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  backend:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./api-backend:/app
+    command: sh -c "npm ci && node app.js"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+
+  frontend:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./ui-frontend:/app
+    command: sh -c "npm ci && npm run dev"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://backend:3000
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+
+  e2e:
+    image: cypress/included:14.3.3
+    working_dir: /e2e
+    volumes:
+      - ./cypress:/e2e
+    depends_on:
+      - frontend
+    command: sh -c "npx wait-on http://frontend:5173 && npx cypress run"
